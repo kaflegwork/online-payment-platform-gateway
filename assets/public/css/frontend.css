@@ -1,0 +1,11 @@
+#opp_payment_method_field .woocommerce-radio-wrapper input{
+    display: inline-block;
+    margin-right: 10px;
+}
+#opp_payment_method_field .woocommerce-radio-wrapper label{
+    display: inline-block;
+}
+
+.opp-text-info{
+    color: #31708f;
+}
