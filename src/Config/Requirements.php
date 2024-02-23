@@ -49,12 +49,12 @@ final class Requirements extends Base {
 					array(
 						'file'    => 'woocommerce/woocommerce.php',
 						'name'    => 'WooCommerce',
-						'version' => '8.4.0',
+						'version' => '8.0.0',
 					),
 					array(
 						'file'    => 'dokan-pro/dokan-pro.php',
 						'name'    => 'Dokan Pro',
-						'version' => '3.9.6',
+						'version' => '3.0.0',
 					),
 
 				),
