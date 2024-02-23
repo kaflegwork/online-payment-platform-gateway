@@ -14,11 +14,8 @@ declare( strict_types=1 );
 namespace OnlinePaymentPlatformGateway\Integrations\dokan;
 
 use OnlinePaymentPlatformGateway\Integrations\OPPApi\Merchant;
-use WC_Order;
-use WC_Payment_Gateway;
 use OnlinePaymentPlatformGateway\Config\Plugin;
-use WP_Error;
-use League\ISO3166\ISO3166;
+
 
 /**
  * Class Dokan
@@ -290,27 +287,11 @@ class Dokan {
 		}
 
 		if ( isset( $_POST['settings'][ $this->slug ] ) && isset( $_POST['settings'][ $this->slug ]['email'] ) ) {
-
-			$iso     = new ISO3166();
-			$country = $iso->alpha2( $dokan_settings['address']['country'] );
-
 			$data = array(
 				'emailaddress' => sanitize_email( $email ),
 				'legal_name'   => $dokan_settings['store_name'],
-				// 'phone' => $dokan_settings['phone'],
 				'type'         => 'business',
 				'coc_nr'       => $coc_nr,
-
-				/*
-				 'address_line_1' => opp_limit_characters($dokan_settings['address']['street_1'], 150),
-				 'address_line_2' => opp_limit_characters($dokan_settings['address']['street_2'], 150),
-				 'zipcode' => opp_limit_characters($dokan_settings['address']['zip'], 20),
-				 'city' => opp_limit_characters($dokan_settings['address']['city'], 100),
-				 'country' => $country['alpha3'],
-				 'locale' => 'en',
-				*/
-
-				'country'      => $country['alpha3'],
 				'metadata'     => array(
 					'store_id' => (string) $store_id,
 				),
