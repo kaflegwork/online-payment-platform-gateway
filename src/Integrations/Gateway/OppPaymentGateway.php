@@ -689,12 +689,12 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 						continue;
 					}
 
-					$tmp_order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment approved pending! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
+					$tmp_order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment is pending! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
 				}
 			}
 
 			if ( $has_suborder ) {
-				$order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment approved pending! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+				$order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment is pending! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
 			}
 		} elseif ( $result['data']->status === 'completed' ) {
 			// Payment complete
