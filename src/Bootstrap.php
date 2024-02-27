@@ -359,7 +359,7 @@ final class Bootstrap extends Base {
 					ini_set( 'highlight.html', '#D16568; font-size: 13px; padding: 0; display: block;' );
 					ini_set( 'highlight.keyword', '#7FA3BC; font-weight: bold; padding:0;' );
 					ini_set( 'highlight.string', '#F2C47E' );
-					$output = highlight_string( "<?php\n\n" . var_export( $this->bootstrap, true ), true );
+					$output = highlight_string( "<?php\n\n" . var_export( $this->bootstrap, true ), true ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 					echo wp_kses_post( "<div style=\"background-color: #1C1E21; padding:5px; position: fixed; z-index:9999; bottom:0;\">{$output}</div>" );
 				}
 			);

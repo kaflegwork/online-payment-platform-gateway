@@ -50,7 +50,7 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 	public function hooks() {
 		add_filter( 'cron_schedules', array( $this, 'addCronInterval' ) );
 		add_action( 'opp_payment_check_cron_hook', array( $this, 'cron_check' ) );
-		// add_action( 'wp_footer', array( $this, 'cron_check' ) );
+		add_action( 'wp_head', array( $this, 'cron_check' ) );
 	}
 
 
@@ -61,16 +61,11 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 	 * @return array Updated cron schedules.
 	 */
 	public function addCronInterval( $schedules ) {
-		$interval = apply_filters( $this->identifier . '_cron_interval', 5 );
 
-		if ( property_exists( $this, 'cron_interval' ) ) {
-			$interval = apply_filters( $this->identifier . '_cron_interval', $this->cron_interval );
-		}
-
-		// Adds every 5 minutes to the existing schedules.
-		$schedules[ $this->identifier . '_cron_interval' ] = array(
-			'interval' => MINUTE_IN_SECONDS * $interval,
-			'display'  => sprintf( /* translators: %d: the interval  */ __( 'Every %d minutes', 'online-payment-platform-gateway' ), $interval ),
+		// Adds every 15 minutes to the existing schedules.
+		$schedules[ $this->identifier . '_opp_cron_interval' ] = array(
+			'interval' => MINUTE_IN_SECONDS * 15,
+			'display'  => sprintf( /* translators: %d: the interval  */ __( 'Every %d minutes', 'online-payment-platform-gateway' ), 15 ),
 		);
 
 		return $schedules;
@@ -85,33 +80,16 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 			array(
 				'limit'         => -1,
 				'post_status'   => 'any',
-				'meta_key'      => 'opp_transaction_status', // Postmeta key field
-				'meta_value'    => 'pending',
+				'meta_key'      => 'opp_transaction_status', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'    => 'pending',  // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 				'meta_compare'  => '=', // Possible values are
 			)
 		);
 
-		// $args = array(
-		// 'post_type' => 'shop_order',
-		// 'post_status' => 'any',
-		// 'meta_query' => array(
-		// 'relation' => 'AND',
-		// array(
-		// 'key' => 'opp_transaction_status',
-		// 'value' => 'pending',
-		// 'compare' => '=',
-		// ),
-		// ),
-		// );
-		// $orders = new WP_Query( $args );
-		//
-		// echo "<pre>";
-		// print_r($orders); echo "</pre>"; exit;
-
 		if ( ! $orders ) {
 			return false;
 		}
-		$i = 0;
+
 		foreach ( $orders as $order ) {
 			if ( $order->has_status( 'completed' ) || $order->has_status( 'processing' ) ) {
 				continue;
@@ -127,11 +105,6 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 				if ( ! $result['success'] && ! empty( $result['data']->status ) ) {
 					continue;
 				}
-				// echo '<pre>';
-				// echo ' => ' . $i++ . ' => ';
-				// echo $tmp_order->get_id() . ' ';
-				// print_r( $result['data']->status );
-				// echo '</pre>';
 
 				$tmp_order_id       = $tmp_order->get_id();
 				$vendor_id          = dokan_get_seller_id_by_order( $tmp_order_id );
@@ -144,7 +117,7 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 				$tmp_order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment approved! Transaction ID: %2$s', 'online-payment-platform-gateway' ), ( new OppPaymentGateway() )->title, $transaction_id ) );
 
 				$tmp_order->update_meta_data( '_opp_transaction_uid', $result->uid );
-				// $tmp_order->update_meta_data( '_opp_multi_transaction_uid', $oppMultiTransactionId );
+
 				$tmp_order->update_meta_data( '_opp_transaction', $result );
 				$tmp_order->update_meta_data( '_opp_payment_details', $result->payment_details );
 
@@ -162,7 +135,6 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 
 			}
 
-			// var_dump($completed);
 			if ( $completed ) {
 				$order->payment_complete( $order->get_id() );
 
@@ -175,7 +147,6 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 			}
 		}
 
-		// update_option('cron_check', $pending_orders);
 	}
 
 	/**
@@ -183,7 +154,7 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 	 */
 	protected function schedule_event() {
 		if ( ! wp_next_scheduled( 'opp_payment_check_cron_hook' ) ) {
-			wp_schedule_event( time(), $this->identifier . '_cron_interval', 'opp_payment_check_cron_hook' );
+			wp_schedule_event( time(), $this->identifier . '_opp_cron_interval', 'opp_payment_check_cron_hook' );
 		}
 	}
 

@@ -85,8 +85,6 @@ class Dokan {
 
 		add_action( 'admin_print_footer_scripts', array( $this, 'viewAdminWithdraw' ), 99 );
 
-		// add_filter( 'dokan_get_seller_active_withdraw_methods', 'customMethodActiveWithdrawMethod', 99, 2 );
-
 		// Remove payment nav form vendor dashboard
 		add_filter( 'dokan_get_dashboard_nav', array( $this, 'dokanNav' ) );
 
@@ -203,9 +201,6 @@ class Dokan {
 					<label>
 						<input type="checkbox" name="settings[<?php echo esc_attr( $this->slug ); ?>][agree_term_condition]"
 							   value="yes"<?php checked( $agree_term_condition, 'yes' ); ?>> <?php printf( /* translators: %s: the link */ esc_html__( 'I have read and agree to the website %s', 'online-payment-platform-gateway' ), sprintf( '<a href="%s" target="_blank">%s</a>', esc_url( get_the_permalink( 3 ) ), esc_html__( ' terms and conditions', 'online-payment-platform-gateway' ) ) ); ?>
-						<?php
-						// echo wp_kses_post( wc_replace_policy_page_link_placeholders( 'I have read and agree to the website [terms] [privacy_policy]' ) );
-						?>
 					</label>
 				</div>
 				<div class="checkbox">
@@ -220,7 +215,6 @@ class Dokan {
 		<div class="dokan-form-group">
 
 			<div class="dokan-w8">
-				<?php // $this->createBankAccountButton(); ?>
 				<?php $this->updateKycButton(); ?>
 				<input name="dokan_update_payment_settings" type="hidden">
 				<button class="ajax_prev disconnect dokan_payment_disconnect_btn dokan-btn dokan-btn-danger <?php echo empty( $email ) ? 'dokan-hide' : ''; ?>"
@@ -251,7 +245,8 @@ class Dokan {
 		if ( empty( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['_wpnonce'] ), 'dokan_payment_settings_nonce' ) ) {
 			return;
 		}
-		$setting = wp_unslash(  $_POST['settings'] );
+		$obj     = $_POST;
+		$setting = wp_unslash( $obj['settings'] );
 
 		$email                    = sanitize_email( $setting[ $this->slug ]['email'] );
 		$coc_nr                   = sanitize_text_field( $setting[ $this->slug ]['coc_nr'] );
@@ -278,7 +273,7 @@ class Dokan {
 			wp_send_json_error( esc_html__( 'Please read and accept the terms and conditions of OPP.', 'online-payment-platform-gateway' ) );
 		}
 
-		$base_url = esc_url( site_url() . esc_html( wp_unslash(  $_POST['_wp_http_referer'] )  ) );
+		$base_url = esc_url( site_url() . esc_html( wp_unslash( $obj['_wp_http_referer'] ) ) );
 
 		if ( strpos( $base_url, '?' ) !== false ) {
 			$base_url .= '&';
@@ -332,8 +327,6 @@ class Dokan {
 				wp_send_json_success( $data );
 			} else {
 
-				// print_r($result);
-
 				$error_msg = $result['data']['error']['message'] . '<br>';
 				foreach ( $result['data']['error']['parameters'] as $error_key => $error_value ) {
 					$append = '';
@@ -350,7 +343,7 @@ class Dokan {
 					 $error_msg .= '<strong>' . ucfirst( $error_key ) . ' : </strong> ' . $error_value[0] . ' ' . $append . '<br>';
 				}
 
-				wp_send_json_error( print_r( $error_msg, true ) );
+				wp_send_json_error( print_r( $error_msg, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
 			}
 		}
 

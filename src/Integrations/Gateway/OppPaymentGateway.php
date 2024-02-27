@@ -123,7 +123,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		// but in this tutorial we begin with simple payments
 		$this->supports = array(
 			'products',
-			'refunds',
+			// 'refunds',
 		);
 
 		// Load the settings.
@@ -138,9 +138,8 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		$this->transaction_escrow_period = $this->get_option( 'transaction_escrow_period' );
 		$this->test_mode                 = 'yes' === $this->get_option( 'test_mode' );
 		$this->api_key                   = $this->test_mode ? $this->get_option( 'test_api_key' ) : $this->get_option( 'live_api_key' );
-		// $this->api_url = $this->test_mode ? $this->get_option('test_api_url') : $this->get_option('live_api_url');
-		$this->defaul_merchant_uid = $this->test_mode ? $this->get_option( 'test_default_merchant_uid' ) : $this->get_option( 'live_default_merchant_uid' );
-		$this->debug               = 'yes' === $this->get_option( 'debug_enabled', 'no' );
+		$this->defaul_merchant_uid       = $this->test_mode ? $this->get_option( 'test_default_merchant_uid' ) : $this->get_option( 'live_default_merchant_uid' );
+		$this->debug                     = 'yes' === $this->get_option( 'debug_enabled', 'no' );
 
 	}
 
@@ -153,7 +152,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_action( 'woocommerce_api_webhook_opp_gateway', array( $this, 'webhook' ) );
 
-		add_action( 'init', array( $this, 'oppVerifyResponse' ) );
+		add_action( 'init', array( $this, 'checkResponse' ) );
 		add_filter( 'woocommerce_thankyou_order_received_text', array( $this, 'thankyou_page' ), 10, 2 );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'addPendingStatus' ), 10, 1 );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'emailPendingStatusNote' ), 10, 1 );
@@ -231,8 +230,6 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 	public function webhook() {
 		// Log or echo the generated URL for verification
 		$webhook_url = WC()->api_request_url( 'webhook_opp_gateway' );
-		error_log( 'Generated webhook URL: ' . $webhook_url ); // Log the URL in your error log
-		error_log( 'Generated webhook REQUEST: ' . print_r( $_REQUEST, true ) ); // Log the URL in your error log
 
 		header( 'HTTP/1.1 200 OK' );
 		echo 'callback';
@@ -265,23 +262,22 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 				'default'     => 'Pay with your payment gateway.',
 				'desc_tip'    => true,
 			),
-
-			// 'display_notice_to_non_connected_sellers' => array(
-			// 'title'       => esc_html__( 'Display Notice to Connect Seller', 'online-payment-platform-gateway' ),
-			// 'label'       => esc_html__( 'If checked, non-connected sellers will receive announcement notice to connect their OPP account. ', 'online-payment-platform-gateway' ),
-			// 'type'        => 'checkbox',
-			// 'description' => esc_html__( 'If checked, non-connected sellers will receive announcement notice to connect their OPP account once in a week.', 'online-payment-platform-gateway' ),
-			// 'default'     => 'no',
-			// 'desc_tip'    => true,
-			// ),
-				'debug_enabled' => array(
-					'title'       => esc_html__( 'Debug Enabled', 'online-payment-platform-gateway' ),
-					'label'       => 'Debug Enabled',
-					'type'        => 'checkbox',
-					'description' => esc_html__( 'When enabled, valuable debugging information will be captured and stored in the WooCommerce logs.', 'online-payment-platform-gateway' ),
-					'default'     => 'no',
-					'desc_tip'    => true,
-				),
+			'display_notice_to_non_connected_sellers' => array(
+				'title'       => esc_html__( 'Display Notice to Connect Seller', 'online-payment-platform-gateway' ),
+				'label'       => esc_html__( 'If checked, non-connected sellers will receive announcement notice to connect their OPP account. ', 'online-payment-platform-gateway' ),
+				'type'        => 'checkbox',
+				'description' => esc_html__( 'If checked, non-connected sellers will receive announcement notice to connect their OPP account once in a week.', 'online-payment-platform-gateway' ),
+				'default'     => 'no',
+				'desc_tip'    => true,
+			),
+			'debug_enabled' => array(
+				'title'       => esc_html__( 'Debug Enabled', 'online-payment-platform-gateway' ),
+				'label'       => 'Debug Enabled',
+				'type'        => 'checkbox',
+				'description' => esc_html__( 'When enabled, valuable debugging information will be captured and stored in the WooCommerce logs.', 'online-payment-platform-gateway' ),
+				'default'     => 'no',
+				'desc_tip'    => true,
+			),
 			'test_mode' => array(
 				'title'    => esc_html__( 'Test mode', 'online-payment-platform-gateway' ),
 				'label'    => esc_html__( 'Enable Test Mode', 'online-payment-platform-gateway' ),
@@ -321,10 +317,6 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 				'type'        => 'text',
 				'description' => esc_html__( 'If vendor not linked to OPP account, payments will be directed to this Partner Merchant Uid.', 'online-payment-platform-gateway' ),
 			),
-			// 'test_api_url' => array(
-			// 'title' => esc_html__('Sandbox API URL', ''),
-			// 'type' => 'text',
-			// ),
 			'test_api_key' => array(
 				'title' => esc_html__( 'Sandbox API Key', 'online-payment-platform-gateway' ),
 				'type'  => 'text',
@@ -367,7 +359,6 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 			reset( $option_keys )
 		);
 
-		// do_action( 'woocommerce_opp_form_end', $this->id );
 	}
 
 	/**
@@ -378,16 +369,24 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 	public function process_payment( $order_id ) {
 		$order = wc_get_order( $order_id );
 
-        if(isset($_POST['opp_payment_method'])){
-            $payment_method = sanitize_text_field( wp_unslash( $_POST['opp_payment_method'] ) );
-            $result = $this->multiTransactionData( $order, $order_id, $payment_method );
-        }
+		// Verify nonce
+		$nonce_value = isset( $_POST['woocommerce-process-checkout-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['woocommerce-process-checkout-nonce'] ) ) : '';
 
+		if ( ! wp_verify_nonce( $nonce_value, 'woocommerce-process_checkout' ) ) {
+			// Nonce verification failed, handle accordingly (e.g., show an error message)
+			wc_add_notice( __( 'Security check failed. Please try again.', 'online-payment-platform-gateway' ), 'error' );
+			return false;
+		}
 
-		if (isset($payment_method) && $result['success'] && is_object($result['data']) && $result['data']->status === 'created') {
+		if ( isset( $_POST['opp_payment_method'] ) ) {
+			$payment_method = sanitize_text_field( wp_unslash( $_POST['opp_payment_method'] ) );
+			$result         = $this->multiTransactionData( $order, $order_id, $payment_method );
+		}
+
+		if ( isset( $payment_method ) && $result['success'] && is_object( $result['data'] ) && $result['data']->status === 'created' ) {
 			// Mark as on-hold (we're awaiting the payment)
 			update_post_meta( $order_id, 'opp_order_multi_transaction_id', $result['data']->uid );
-			// $order->update_status( 'on-hold', esc_html__( 'Awaiting OPP payment', 'online-payment-platform-gateway' ) );
+
 			$order->update_status( 'pending', sprintf( /* translators: %1$s: the plugin name */ esc_html__( '%s Awaiting payment!', 'online-payment-platform-gateway' ), $this->title ) );
 
 			$all_orders = Helper::getAllOrdersToProcessed( $order );
@@ -421,10 +420,10 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 				'redirect' => $result['data']->redirect_url,
 			);
 		} else {
-			$order->add_order_note(  esc_html__( 'Processing Response: Payment processing failed.', 'online-payment-platform-gateway' ), 'error' );
-            wc_add_notice( esc_html__( 'Processing Response: Payment processing failed. Please try again.', 'online-payment-platform-gateway' ), 'error' );
+			$order->add_order_note( esc_html__( 'Processing Response: Payment processing failed.', 'online-payment-platform-gateway' ), 'error' );
+			wc_add_notice( esc_html__( 'Processing Response: Payment processing failed. Please try again.', 'online-payment-platform-gateway' ), 'error' );
 
-            return false;
+			return false;
 		}
 	}
 
@@ -437,6 +436,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 	 *
 	 * @param WC_Order $order The WooCommerce order object.
 	 * @param int      $order_id The ID of the WooCommerce order.
+	 * @param string   $payment_method The method of OPP payment.
 	 * @return array|WP_Error The result of the transaction creation.
 	 */
 	protected function multiTransactionData( $order, $order_id, $payment_method ) {
@@ -451,14 +451,12 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 			array(
 				'order'            => $order->get_id(),
 				'opppayment'       => true,
-				'is_pay_for_order' => true,
+				'_wpnonce'         => wp_create_nonce( 'opp_payment_' . $order->get_id() ),
+				'env'              => $this->test_mode ? 'sandbox' : 'production',
 			),
 			$this->get_return_url( $order )
 		);
 
-//        print_r($_POST['opp_payment_method']); exit;
-//        // phpcs:ignore WordPress.Security.NonceVerification.Missing
-//		$payment_method = sanitize_text_field( wp_unslash( $_POST['opp_payment_method'] ) );
 		// Construct initial data array
 		$data = array(
 			'checkout'       => false,
@@ -516,7 +514,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 
 			foreach ( $order->get_items() as $item_id => $item_data ) {
 				$author = get_post_field( 'post_author', $item_data['product_id'] );
-				if ( intval($seller_id) === intval($author) ) {
+				if ( intval( $seller_id ) === intval( $author ) ) {
 					$product    = $item_data->get_product();
 					$product_id = $product->get_id();
 
@@ -577,212 +575,209 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 	}
 
 
-	/**
-	 * Verify and process the response from the online payment platform.
-	 */
-	public function oppVerifyResponse() {
-		if ( isset( $_REQUEST['opppayment'] ) ) {
-			$this->checkResponse();
-		}
-	}
+
 
 	/**
 	 * Check the response from the online payment platform and update order status accordingly.
 	 */
 	public function checkResponse() {
-		global $woocommerce;
 
-		$order_id = null;
-		if ( isset( $_GET['order'] ) ) {
-			$order_id = absint( wp_unslash( $_GET['order'] ) );
-		}
+		if ( isset( $_REQUEST['opppayment'] ) ) {
+			global $woocommerce;
+			$nonce_value = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+			$order_id    = null;
 
-		$order = wc_get_order( $order_id );
-
-		if ( ! $order || $order_id === 0 || $order_id === '' ) {
-			return;
-		}
-
-		if ( ! isset( $_GET['key'] ) || $order->get_order_key() !== sanitize_text_field( wp_unslash( $_GET['key'] ) ) ) {
-			return;
-		}
-
-		if ( $order->has_status( 'completed' ) || $order->has_status( 'processing' ) ) {
-			return;
-		}
-
-		$opp_multi_transaction_id = get_post_meta( $order_id, 'opp_order_multi_transaction_id', true );
-		$result                   = $this->transaction->retrieve( $opp_multi_transaction_id, true );
-		update_post_meta( $order_id, 'opp_transaction_status', $result['data']->status );
-
-		$all_orders   = Helper::getAllOrdersToProcessed( $order );
-		$has_suborder = $order->get_meta( 'has_sub_order' );
-		// echo "<pre>";
-		// print_r($result); echo "</pre>"; exit;
-
-		if ( ! $result['success'] ) {
-			wc_add_notice( esc_html__( 'Your order has been failed.', 'online-payment-platform-gateway' ), 'error' );
-
-			foreach ( $result['data']->transactions as $transaction ) {
-				foreach ( $all_orders as $tmp_order ) {
-					// return if $tmp_order not instance of WC_Order
-					if ( ! $tmp_order instanceof \WC_Order ) {
-						continue;
-					}
-
-					$tmp_order_id = $tmp_order->get_id();
-					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
-						continue;
-					}
-
-					$tmp_order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment failed! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
-				}
+			if ( isset( $_GET['order'] ) ) {
+				$order_id = absint( wp_unslash( $_GET['order'] ) );
 			}
 
-			if ( $has_suborder ) {
-				$tmp_order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment failed! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+			if ( ! wp_verify_nonce( $nonce_value, 'opp_payment_' . $order_id ) ) {
+				return;
 			}
 
-			$wc_order = new WC_Order( $order_id );
-			wp_safe_redirect( $wc_order->get_checkout_payment_url( true ) );
-			exit;
-		}
+			$order = wc_get_order( $order_id );
 
-		if ( $result['data']->status === 'cancelled' ) {
-
-			wc_add_notice( esc_html__( 'Your order has been cancelled.', 'online-payment-platform-gateway' ), 'notice' );
-
-			foreach ( $result['data']->transactions as $transaction ) {
-				foreach ( $all_orders as $tmp_order ) {
-					// return if $tmp_order not instance of WC_Order
-					if ( ! $tmp_order instanceof \WC_Order ) {
-						continue;
-					}
-
-					$tmp_order_id = $tmp_order->get_id();
-					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
-						continue;
-					}
-
-					$tmp_order->update_status( /* translators: %1$s: the plugin name, %2$s: the  transaction iD */ 'cancelled', sprintf( esc_html__( '%1$s payment cancelled by user! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
-				}
+			if ( ! $order || $order_id === 0 || $order_id === '' ) {
+				return;
 			}
 
-			if ( $has_suborder ) {
-				$order->update_status( 'cancelled', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment cancelled by user! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+			if ( ! isset( $_GET['key'] ) || $order->get_order_key() !== sanitize_text_field( wp_unslash( $_GET['key'] ) ) ) {
+				return;
 			}
 
-			$wc_order = new WC_Order( $order_id );
-			wp_safe_redirect( $wc_order->get_cancel_order_url() );
-			exit;
-		} elseif ( $result['data']->status === 'pending' ) {
-
-			foreach ( $result['data']->transactions as $transaction ) {
-				foreach ( $all_orders as $tmp_order ) {
-					// return if $tmp_order not instance of WC_Order
-					if ( ! $tmp_order instanceof \WC_Order ) {
-						continue;
-					}
-
-					$tmp_order_id = $tmp_order->get_id();
-					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
-						continue;
-					}
-
-					$tmp_order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment is pending! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
-				}
+			if ( $order->has_status( 'completed' ) || $order->has_status( 'processing' ) ) {
+				return;
 			}
 
-			if ( $has_suborder ) {
-				$order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment is pending! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
-			}
-		} elseif ( $result['data']->status === 'completed' ) {
-			// Payment complete
-			$order->payment_complete( $opp_multi_transaction_id );
+			$opp_multi_transaction_id = get_post_meta( $order_id, 'opp_order_multi_transaction_id', true );
+			$result                   = $this->transaction->retrieve( $opp_multi_transaction_id, true );
+			update_post_meta( $order_id, 'opp_transaction_status', $result['data']->status );
 
-			foreach ( $result['data']->transactions as $transaction ) {
-				$all_withdraws = array();
-				foreach ( $all_orders as $tmp_order ) {
-					// return if $tmp_order not instance of WC_Order
-					if ( ! $tmp_order instanceof \WC_Order ) {
-						continue;
+			$all_orders   = Helper::getAllOrdersToProcessed( $order );
+			$has_suborder = $order->get_meta( 'has_sub_order' );
+
+			if ( ! $result['success'] ) {
+				wc_add_notice( esc_html__( 'Your order has been failed.', 'online-payment-platform-gateway' ), 'error' );
+
+				foreach ( $result['data']->transactions as $transaction ) {
+					foreach ( $all_orders as $tmp_order ) {
+						// return if $tmp_order not instance of WC_Order
+						if ( ! $tmp_order instanceof \WC_Order ) {
+							continue;
+						}
+
+						$tmp_order_id = $tmp_order->get_id();
+						if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
+							continue;
+						}
+
+						$tmp_order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment failed! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
 					}
-
-					$tmp_order_id       = $tmp_order->get_id();
-					$vendor_id          = dokan_get_seller_id_by_order( $tmp_order_id );
-					$vendor_raw_earning = dokan()->commission->get_earning_by_order( $tmp_order, 'seller' );
-					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
-						continue;
-					}
-
-					$tmp_order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment approved! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
-
-					$tmp_order->update_meta_data( '_opp_transaction_uid', $transaction->uid );
-					$tmp_order->update_meta_data( '_opp_multi_transaction_uid', $opp_multi_transaction_id );
-					$tmp_order->update_meta_data( '_opp_transaction', $transaction );
-					$tmp_order->update_meta_data( '_opp_payment_details', $transaction->payment_details );
-
-					// set transaction id
-					$tmp_order->set_transaction_id( $transaction->uid );
-					$tmp_order->save();
-
-					$withdraw_data = array(
-						'user_id'  => $vendor_id,
-						'amount'   => $vendor_raw_earning,
-						'order_id' => $tmp_order_id,
-					);
-
-					$all_withdraws[] = $withdraw_data;
 				}
 
-				$this->insert_into_vendor_balance( $all_withdraws );
-				$this->process_seller_withdraws( $all_withdraws );
-			}
-
-			if ( $has_suborder ) {
-				$order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment approved! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
-			}
-
-			// Remove cart
-			$woocommerce->cart->empty_cart();
-			$order->save();
-		} else {
-
-			wc_add_notice( esc_html__( 'Your order has been failed.', 'online-payment-platform-gateway' ), 'error' );
-
-			foreach ( $result['data']->transactions as $transaction ) {
-				foreach ( $all_orders as $tmp_order ) {
-					// return if $tmp_order not instance of WC_Order
-					if ( ! $tmp_order instanceof \WC_Order ) {
-						continue;
-					}
-
-					$tmp_order_id = $tmp_order->get_id();
-					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
-						continue;
-					}
-
-					$tmp_order->update_status(
-						'failed',
-						sprintf(/* translators: %1$s: the plugin name, %2$s: the transaction iD */
-							esc_html__( '%1$s payment failed! Transaction ID: %2$s', 'online-payment-platform-gateway' ),
-							$this->title,
-							$transaction->uid
-						)
-					);
+				if ( $has_suborder ) {
+					$tmp_order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment failed! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
 				}
+
+				$wc_order = new WC_Order( $order_id );
+				wp_safe_redirect( $wc_order->get_checkout_payment_url( true ) );
+				exit;
 			}
 
-			if ( $has_suborder ) {
-				$order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment failed! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+			if ( $result['data']->status === 'cancelled' ) {
+
+				wc_add_notice( esc_html__( 'Your order has been cancelled.', 'online-payment-platform-gateway' ), 'notice' );
+
+				foreach ( $result['data']->transactions as $transaction ) {
+					foreach ( $all_orders as $tmp_order ) {
+						// return if $tmp_order not instance of WC_Order
+						if ( ! $tmp_order instanceof \WC_Order ) {
+							continue;
+						}
+
+						$tmp_order_id = $tmp_order->get_id();
+						if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
+							continue;
+						}
+
+						$tmp_order->update_status( /* translators: %1$s: the plugin name, %2$s: the  transaction iD */ 'cancelled', sprintf( esc_html__( '%1$s payment cancelled by user! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
+					}
+				}
+
+				if ( $has_suborder ) {
+					$order->update_status( 'cancelled', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment cancelled by user! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+				}
+
+				$wc_order = new WC_Order( $order_id );
+				wp_safe_redirect( $wc_order->get_cancel_order_url() );
+				exit;
+			} elseif ( $result['data']->status === 'pending' ) {
+
+				foreach ( $result['data']->transactions as $transaction ) {
+					foreach ( $all_orders as $tmp_order ) {
+						// return if $tmp_order not instance of WC_Order
+						if ( ! $tmp_order instanceof \WC_Order ) {
+							continue;
+						}
+
+						$tmp_order_id = $tmp_order->get_id();
+						if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
+							continue;
+						}
+
+						$tmp_order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment is pending! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
+					}
+				}
+
+				if ( $has_suborder ) {
+					$order->update_status( 'on-hold', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment is pending! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+				}
+			} elseif ( $result['data']->status === 'completed' ) {
+				// Payment complete
+				$order->payment_complete( $opp_multi_transaction_id );
+
+				foreach ( $result['data']->transactions as $transaction ) {
+					$all_withdraws = array();
+					foreach ( $all_orders as $tmp_order ) {
+						// return if $tmp_order not instance of WC_Order
+						if ( ! $tmp_order instanceof \WC_Order ) {
+							continue;
+						}
+
+						$tmp_order_id       = $tmp_order->get_id();
+						$vendor_id          = dokan_get_seller_id_by_order( $tmp_order_id );
+						$vendor_raw_earning = dokan()->commission->get_earning_by_order( $tmp_order, 'seller' );
+						if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
+							continue;
+						}
+
+						$tmp_order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the transaction iD */ esc_html__( '%1$s payment approved! Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $transaction->uid ) );
+
+						$tmp_order->update_meta_data( '_opp_transaction_uid', $transaction->uid );
+						$tmp_order->update_meta_data( '_opp_multi_transaction_uid', $opp_multi_transaction_id );
+						$tmp_order->update_meta_data( '_opp_transaction', $transaction );
+						$tmp_order->update_meta_data( '_opp_payment_details', $transaction->payment_details );
+
+						// set transaction id
+						$tmp_order->set_transaction_id( $transaction->uid );
+						$tmp_order->save();
+
+						$withdraw_data = array(
+							'user_id'  => $vendor_id,
+							'amount'   => $vendor_raw_earning,
+							'order_id' => $tmp_order_id,
+						);
+
+						$all_withdraws[] = $withdraw_data;
+					}
+
+					$this->insert_into_vendor_balance( $all_withdraws );
+					$this->process_seller_withdraws( $all_withdraws );
+				}
+
+				if ( $has_suborder ) {
+					$order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment approved! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+				}
+
+				// Remove cart
+				$woocommerce->cart->empty_cart();
+				$order->save();
+			} else {
+
+				wc_add_notice( esc_html__( 'Your order has been failed.', 'online-payment-platform-gateway' ), 'error' );
+
+				foreach ( $result['data']->transactions as $transaction ) {
+					foreach ( $all_orders as $tmp_order ) {
+						// return if $tmp_order not instance of WC_Order
+						if ( ! $tmp_order instanceof \WC_Order ) {
+							continue;
+						}
+
+						$tmp_order_id = $tmp_order->get_id();
+						if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
+							continue;
+						}
+
+						$tmp_order->update_status(
+							'failed',
+							sprintf(/* translators: %1$s: the plugin name, %2$s: the transaction iD */
+								esc_html__( '%1$s payment failed! Transaction ID: %2$s', 'online-payment-platform-gateway' ),
+								$this->title,
+								$transaction->uid
+							)
+						);
+					}
+				}
+
+				if ( $has_suborder ) {
+					$order->update_status( 'failed', sprintf( /* translators: %1$s: the plugin name, %2$s: the multi transaction iD */ esc_html__( '%1$s payment failed! Multi Transaction ID: %2$s', 'online-payment-platform-gateway' ), $this->title, $opp_multi_transaction_id ) );
+				}
+
+				$wc_order = new WC_Order( $order_id );
+				wp_safe_redirect( $wc_order->get_checkout_payment_url() );
+				exit;
 			}
-
-			$wc_order = new WC_Order( $order_id );
-			wp_safe_redirect( $wc_order->get_checkout_payment_url() );
-			exit;
-		}
-
-	}
+		}}
 
 
 	/**
@@ -798,13 +793,8 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		global $wpdb;
 
 		foreach ( $all_withdraws as $withdraw ) {
-			// $stripe_key          = get_user_meta( $withdraw['user_id'], '_stripe_connect_access_key', true );
-			// $connected_vendor_id = get_user_meta( $withdraw['user_id'], 'dokan_connected_vendor_id', true );
-			//
-			// if ( ! $stripe_key && ! $connected_vendor_id ) {
-			// continue;
-			// }
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert(
 				$wpdb->prefix . 'dokan_vendor_balance',
 				array(
@@ -847,12 +837,6 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		$ip = dokan_get_client_ip();
 
 		foreach ( $all_withdraws as $withdraw_data ) {
-			// $stripe_key          = get_user_meta( $withdraw_data['user_id'], '_stripe_connect_access_key', true );
-			// $connected_vendor_id = get_user_meta( $withdraw_data['user_id'], 'dokan_connected_vendor_id', true );
-			//
-			// if ( ! $stripe_key && ! $connected_vendor_id ) {
-			// continue;
-			// }
 
 			$data = array(
 				'date'   => current_time( 'mysql' ),

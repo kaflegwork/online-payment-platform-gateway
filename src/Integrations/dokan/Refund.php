@@ -42,7 +42,7 @@ class Refund {
 		add_action( 'dokan_refund_request_created', array( $this, 'process_refund' ) );
 		add_filter( 'dokan_refund_approve_vendor_refund_amount', array( $this, 'vendor_refund_amount' ), 10, 3 );
 		add_action( 'dokan_refund_approve_before_insert', array( $this, 'add_vendor_withdraw_entry' ), 10, 3 );
-		// add_action( 'dokan_refund_approve_before_insert', [ $this, 'update_gateway_fee' ], 10, 3 );
+
 		add_filter( 'dokan_excluded_gateways_from_auto_process_api_refund', array( $this, 'exclude_from_auto_process_api_refund' ) );
 	}
 
@@ -267,6 +267,7 @@ class Refund {
 
 		global $wpdb;
 
+        //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(
 			$wpdb->dokan_vendor_balance,
 			array(

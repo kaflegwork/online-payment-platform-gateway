@@ -97,7 +97,7 @@ class Validation {
 		}
 
 		foreach ( $vendor_names as $vendor_id => $data ) {
-			$errors->add( 'stipe-not-configured', wp_kses_post(sprintf( /* translators: %1$s: the vendor name, %2$s: the list of products */ __( '<strong>Error!</strong> You cannot complete your purchase until <strong>%1$s</strong> has enabled OPP as a payment gateway. Please remove %2$s to continue.', 'online-payment-platform-gateway' ), $data['name'], $data['products'] ) ));
+			$errors->add( 'opp-not-configured', wp_kses_post( sprintf( /* translators: %1$s: the vendor name, %2$s: the list of products */ __( '<strong>Error!</strong> You cannot complete your purchase until <strong>%1$s</strong> has enabled OPP as a payment gateway. Please remove %2$s to continue.', 'online-payment-platform-gateway' ), $data['name'], $data['products'] ) ) );
 		}
 	}
 }
