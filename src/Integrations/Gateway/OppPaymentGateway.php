@@ -123,7 +123,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		// but in this tutorial we begin with simple payments
 		$this->supports = array(
 			'products',
-			// 'refunds',
+			'refunds',
 		);
 
 		// Load the settings.
@@ -405,11 +405,13 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 
 					$tmp_order_id = $tmp_order->get_id();
 					$seller_id    = dokan_get_seller_id_by_order( $tmp_order_id );
+					// Get store information using the vendor ID
+					$store_info = dokan_get_store_info( $seller_id );
 
 					if ( $tmp_order_id !== (int) $transaction->metadata[0]->value ) {
 						continue;
 					}
-					$tmp_order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the  transaction iD */ esc_html__( '%1$s payment Created for %2$s and vendor %3$s! Transaction ID: %4$s', 'online-payment-platform-gateway' ), $this->title, $tmp_order_id, $seller_id, $transaction->uid ) );
+					$tmp_order->add_order_note( sprintf( /* translators: %1$s: the plugin name, %2$s: the  transaction iD */ esc_html__( '%1$s payment Created for %2$s and vendor %3$s! Transaction ID: %4$s', 'online-payment-platform-gateway' ), $this->title, $tmp_order_id, '<a href="' . dokan_get_store_url( $seller_id ) . '">' . $store_info['store_name'] . '</a>', $transaction->uid ) );
 
 					update_post_meta( $tmp_order_id, Helper::getOrderTransactionIdKey(), $transaction->uid );
 				}
@@ -515,8 +517,9 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 			foreach ( $order->get_items() as $item_id => $item_data ) {
 				$author = get_post_field( 'post_author', $item_data['product_id'] );
 				if ( intval( $seller_id ) === intval( $author ) ) {
-					$product    = $item_data->get_product();
-					$product_id = $product->get_id();
+					$product      = $item_data->get_product();
+					$product_id   = $product->get_id();
+					$product_type = get_post_meta( $product_id, 'select_product_service', true ) ? get_post_meta( $product_id, 'select_product_service', true ) : 'product';
 
 					// Calculate partner fee and prepare product data
 					$partner_fee = $item_data->get_quantity() * ( $partner_fee + Helper::getPartnerFee( $product->get_price() ) );
@@ -548,14 +551,15 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 
 					// Prepare product metadata
 					$product_metadata[ $i ] = array(
-						'name'       => $product->get_name(),
-						'code'       => $product->get_sku(),
-						'quantity'   => $item_data->get_quantity(),
-						'price'      => Helper::toCents( $product->get_price() ),
-						'id'         => strval( $product_id ),
-						'link'       => $product->get_permalink(),
-						'categories' => implode( ', ', $category_names ),
-						'tag'        => implode( ', ', $tag_names ),
+						'name'         => $product->get_name(),
+						'code'         => $product->get_sku(),
+						'product_type' => $product_type,
+						'quantity'     => $item_data->get_quantity(),
+						'price'        => Helper::toCents( $product->get_price() ),
+						'id'           => strval( $product_id ),
+						'link'         => $product->get_permalink(),
+						'categories'   => implode( ', ', $category_names ),
+						'tag'          => implode( ', ', $tag_names ),
 					);
 
 					$seller_total_price += $item_data->get_total();
@@ -569,7 +573,6 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 			$data['transactions'][ $seller_id ]['partner_fee']                 = Helper::toCents( $partner_fee );
 			$data['transactions'][ $seller_id ]['products']                    = $products;
 		}
-
 		// Perform the transaction creation and return
 		return $this->transaction->create( $data, true );
 	}
