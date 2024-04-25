@@ -50,7 +50,7 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 	public function hooks() {
 		add_filter( 'cron_schedules', array( $this, 'addCronInterval' ) );
 		add_action( 'opp_payment_check_cron_hook', array( $this, 'cron_check' ) );
-		add_action( 'wp_head', array( $this, 'cron_check' ) );
+		//add_action( 'wp_head', array( $this, 'cron_check' ) );
 	}
 
 

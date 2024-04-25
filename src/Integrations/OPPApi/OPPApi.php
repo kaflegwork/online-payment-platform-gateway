@@ -37,13 +37,6 @@ class OPPApi {
 	 */
 	const ENDPOINT_PRODUCTION = 'https://api.onlinebetaalplatform.nl/v1/';
 
-	/**
-	 * The current API endpoint URL.
-	 *
-	 * @var string
-	 */
-	private $endpoint = self::ENDPOINT_SANDBOX;
-
 
 	/**
 	 * Whether to log the detailed request/response info.
@@ -65,11 +58,21 @@ class OPPApi {
 		 * @see Bootstrap::__construct
 		 */
 
-        if(!Helper::isTestMode()){
-            $this->endpoint = self::ENDPOINT_PRODUCTION;
-        }
+
         
 	}
+
+    /**
+     * The current API endpoint URL.
+     *
+     * @var string
+     */
+    private  function apiEndpoint(){
+        if(!Helper::isTestMode()){
+           return self::ENDPOINT_PRODUCTION;
+        }
+        return self::ENDPOINT_SANDBOX;
+    }
 
 
 	/**
@@ -125,7 +128,7 @@ class OPPApi {
 		$args         = $this->header();
 		$args['body'] = wp_json_encode( $data );
 
-		$response = wp_remote_post( $this->endpoint . $endpoint, $args );
+		$response = wp_remote_post( $this->apiEndpoint() . $endpoint, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return array(
@@ -174,7 +177,7 @@ class OPPApi {
 	public function get( $endpoint ): array {
 
 		$args     = $this->header();
-		$response = wp_remote_get( $this->endpoint . $endpoint, $args );
+		$response = wp_remote_get( $this->apiEndpoint() . $endpoint, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return array(
