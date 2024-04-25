@@ -102,7 +102,9 @@ class GatewayBackgroundProcess extends WC_Background_Process {
 					continue;
 				}
 				$result = ( new Transaction() )->retrieve( $transaction_id );
-				if ( ! $result['success'] && ! empty( $result['data']->status ) ) {
+
+				if ( ! $result['success'] || empty( $result['data']->status ) ) {
+                    echo "<p>". $tmp_order->get_id() . " => " . $result['data']['error-message'] . "</p>";
 					continue;
 				}
 

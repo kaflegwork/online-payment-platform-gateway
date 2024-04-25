@@ -243,7 +243,7 @@ class OppPaymentGateway extends WC_Payment_Gateway {
 		$this->form_fields = array(
 			'enabled' => array(
 				'title'       => esc_html__( 'Enable/Disable', 'online-payment-platform-gateway' ),
-				'label'       => esc_html__( 'Enable Stripe', 'online-payment-platform-gateway' ),
+				'label'       => esc_html__( 'Enable online payment gateway (OOP)', 'online-payment-platform-gateway' ),
 				'type'        => 'checkbox',
 				'description' => '',
 				'default'     => 'no',

@@ -65,6 +65,10 @@ class OPPApi {
 		 * @see Bootstrap::__construct
 		 */
 
+        if(!Helper::isTestMode()){
+            $this->endpoint = self::ENDPOINT_PRODUCTION;
+        }
+        
 	}
 
 
@@ -90,7 +94,7 @@ class OPPApi {
 	 * @return string
 	 */
 	public function getAuthorizationKey() {
-		return ( new \OnlinePaymentPlatformGateway\Integrations\Gateway\Helper() )::getSecretKey();
+		return Helper::getSecretKey();
 	}
 
 	/**
